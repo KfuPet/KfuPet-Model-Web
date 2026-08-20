@@ -1,0 +1,47 @@
+# ===== 依赖 =====
+node_modules/
+
+# ===== 编译产物 =====
+dist/
+build/
+dist-ssr/
+*.tsbuildinfo
+
+# ===== 日志 =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== 测试 =====
+coverage/
+.nyc_output/
+
+# ===== 环境变量（含密钥，勿提交） =====
+.env
+.env.*
+*.local
+!.env.example
+
+# ===== 本地文件存储 =====
+uploads/
+
+# ===== Prisma 生成代码（通过 npm run prisma:generate 重新生成） =====
+backend/src/generated/
+
+# ===== IDE / 编辑器 =====
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db

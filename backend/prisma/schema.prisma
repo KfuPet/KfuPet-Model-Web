@@ -1,0 +1,202 @@
+// KfuPet 网站数据库模型（PostgreSQL + Prisma）
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== 枚举 =====
+
+enum Role {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum PackageStatus {
+  DRAFT
+  PENDING
+  REVIEWING
+  PUBLISHED
+  REJECTED
+  OFFLINE
+}
+
+// ===== 用户与账号 =====
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  email        String     @unique
+  passwordHash String
+  avatarUrl    String?
+  bio          String?
+  role         Role       @default(USER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  posts           Post[]
+  comments        Comment[]
+  packages        ModelPackage[]
+  downloadRecords DownloadRecord[]
+
+  @@map("users")
+}
+
+// ===== 社区 =====
+
+model CommunityCategory {
+  id          Int     @id @default(autoincrement())
+  name        String
+  slug        String  @unique
+  description String?
+  sortOrder   Int     @default(0)
+
+  posts Post[]
+
+  @@map("community_categories")
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  posts    Post[]
+  packages ModelPackage[]
+
+  @@map("tags")
+}
+
+model Post {
+  id           Int        @id @default(autoincrement())
+  title        String
+  content      String
+  authorId     Int
+  categoryId   Int
+  viewCount    Int        @default(0)
+  likeCount    Int        @default(0)
+  commentCount Int        @default(0)
+  isPinned     Boolean    @default(false)
+  isFeatured   Boolean    @default(false)
+  status       PostStatus @default(PUBLISHED)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  author   User              @relation(fields: [authorId], references: [id])
+  category CommunityCategory @relation(fields: [categoryId], references: [id])
+  tags     Tag[]
+  comments Comment[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  authorId  Int
+  parentId  Int?
+  content   String
+  likeCount Int      @default(0)
+  status    String   @default("PUBLISHED")
+  createdAt DateTime @default(now())
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+// ===== 模型包 =====
+
+model ModelCategory {
+  id          Int     @id @default(autoincrement())
+  name        String
+  slug        String  @unique
+  description String?
+
+  packages ModelPackage[]
+
+  @@map("model_categories")
+}
+
+model ModelPackage {
+  id            Int           @id @default(autoincrement())
+  name          String
+  slug          String        @unique
+  description   String?
+  coverUrl      String?
+  previewUrls   String[]
+  authorId      Int
+  categoryId    Int
+  status        PackageStatus @default(DRAFT)
+  downloadCount Int           @default(0)
+  favoriteCount Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  author   User          @relation(fields: [authorId], references: [id])
+  category ModelCategory @relation(fields: [categoryId], references: [id])
+  tags     Tag[]
+  versions PackageVersion[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("model_packages")
+}
+
+model PackageVersion {
+  id               Int      @id @default(autoincrement())
+  packageId        Int
+  version          String
+  changelog        String?
+  fileSize         Int
+  storageKey       String
+  minKfuPetVersion String?
+  downloadCount    Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  package         ModelPackage     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  downloadRecords DownloadRecord[]
+
+  @@unique([packageId, version])
+  @@index([packageId])
+  @@map("package_versions")
+}
+
+model DownloadRecord {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  versionId Int
+  createdAt DateTime @default(now())
+
+  user    User?          @relation(fields: [userId], references: [id])
+  version PackageVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([versionId])
+  @@map("download_records")
+}
