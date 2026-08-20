@@ -23,6 +23,7 @@ coverage/
 # ===== 环境变量（含密钥，勿提交） =====
 .env
 .env.*
+*.local
 !.env.example
 
 # ===== 本地文件存储 =====
